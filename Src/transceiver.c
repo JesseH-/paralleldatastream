@@ -51,8 +51,7 @@ int32_t main(int32_t argc, char **argv)
         strncpy(server.sun_path, SRV_SOCK_PATH, sizeof(server.sun_path) - 1);
 
         if ((socket_desc = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-                fwrite("Could not create socket \n", 1,
-                       strlen("Could not create socket \n"), fp_log);
+                fputs("Could not create socket \n", fp_log);
                 fflush(fp_log);
                 exit(0);
         }
@@ -82,16 +81,14 @@ int32_t main(int32_t argc, char **argv)
                 if (select_out_soc > 0 && select_out_std > 0) {
 
                         if ((rd1 = read(STDIN_FILENO, buffer, block_size)) < 0) {
-                                fwrite("Receive from stdin \n", 1,
-                                       strlen("Receive from stdin \n"), fp_log);
+                                fputs("Receive from stdin \n", fp_log);
                                 fflush(fp_log);
                                 exit(0);
                         } else if (rd1 > 0) {
 
                                 if ((wrt =
                                      writen(socket_desc, buffer, rd1)) < rd1) {
-                                        fwrite("Send fail \n", 1,
-                                               strlen("Send fail \n"), fp_log);
+                                        fputs("Send fail \n", fp_log);
                                         fflush(fp_log);
                                         exit(0);
                                 }
@@ -108,8 +105,7 @@ int32_t main(int32_t argc, char **argv)
                 if (select_out_soc > 0 && select_out_std > 0) {
 
                         if ((rd2 = read(socket_desc, buffer, block_size)) < 0) {
-                                fwrite("Read failed \n", 1,
-                                       strlen("Read failed \n"), fp_log);
+                                fputs("Read failed \n", fp_log);
                                 fflush(fp_log);
                                 exit(0);
                         } else if (rd2 > 0) {
@@ -117,9 +113,7 @@ int32_t main(int32_t argc, char **argv)
                                 if ((wrt =
                                      writen(STDOUT_FILENO, buffer,
                                             rd2)) < rd2) {
-                                        fwrite("Write failed \n", 1,
-                                               strlen("Write failed \n"),
-                                               fp_log);
+                                        fputs("Write failed \n", fp_log);
                                         fflush(fp_log);
                                         exit(0);
                                 }

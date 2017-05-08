@@ -38,7 +38,7 @@ char **receive_command_args(FILE *fp_log){
     int32_t rd;
 
     if((rd = readn(STDIN_FILENO, &num_args, 4)) < 4){
-        fwrite("less than 4 \n", 1, strlen("less than 4 \n"), fp_log);
+        fputs("less than 4 \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -49,7 +49,7 @@ char **receive_command_args(FILE *fp_log){
     for(i = 0; i<num_args; i++){
         arg_size = 0;
         if((rd = readn(STDIN_FILENO, &arg_size, 4)) < 4){
-            fwrite("less than 4 \n", 1, strlen("less than 4 \n"), fp_log);
+            fputs("less than 4 \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -57,7 +57,7 @@ char **receive_command_args(FILE *fp_log){
         arg = (char*)malloc((arg_size+1) * sizeof(char));
 
         if((rd = readn(STDIN_FILENO, arg, arg_size)) < arg_size){
-            fwrite("less than size \n", 1, strlen("less than size \n"), fp_log);
+            fputs("less than size \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -82,25 +82,25 @@ int32_t create_TCP_server(FILE *fp_log){
     int32_t socket_desc;
 
     if((socket_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-        fwrite("socket create failed! \n", 1, strlen("socket create failed! \n"), fp_log);
+        fputs("socket create failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
 
     int32_t yes = 1;
     if ( setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1 ){
-        fwrite("setsockopt \n", 1, strlen("setsockopt \n"), fp_log);
+        fputs("setsockopt \n", fp_log);
         fflush(fp_log);
     }
 
     if (bind(socket_desc, (struct sockaddr*)(&server), sizeof(server)) < 0){
-        fwrite("Bind failed! \n", 1, strlen("Bind failed! \n"), fp_log);
+        fputs("Bind failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
 
     if (listen(socket_desc, 5) == -1){
-        fwrite("Listen failed! \n", 1, strlen("Listen failed! \n"), fp_log);
+        fputs("Listen failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -119,19 +119,19 @@ int32_t create_SSH_server(FILE *fp_log){
     int32_t socket_desc;
 
     if((socket_desc = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){
-        fwrite("socket create failed! \n", 1, strlen("socket create failed! \n"), fp_log);
+        fputs("socket create failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
 
     if (bind(socket_desc, (struct sockaddr*)(&server), sizeof(server)) < 0){
-        fwrite("Bind UNIX failed! \n", 1, strlen("Bind UNIX failed! \n"), fp_log);
+        fputs("Bind UNIX failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
 
     if (listen(socket_desc, 5) == -1){
-        fwrite("Listen failed! \n", 1, strlen("Listen failed! \n"), fp_log);
+        fputs("Listen failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -145,12 +145,12 @@ void run_server(char *command_path, char **command_args, int32_t *std_in_out_fds
     int32_t read_fd[2];
     int32_t write_fd[2];
     if (pipe(read_fd)){
-        fwrite("Pipe failed! \n", 1, strlen("Pipe failed! \n"), fp_log);
+        fputs("Pipe failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
     if (pipe(write_fd)){
-        fwrite("Pipe failed! \n", 1, strlen("Pipe failed! \n"), fp_log);
+        fputs("Pipe failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -180,7 +180,7 @@ void run_server(char *command_path, char **command_args, int32_t *std_in_out_fds
     tv.tv_usec = 10000;
 
     /*if( setsockopt(std_in_out_fds[0], SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval)) == -1){
-            fwrite("setsockopt \n", 1, strlen("setsockopt \n"), fp_log);
+            fputs("setsockopt \n", fp_log);
             fflush(fp_log);
     }*/
 
@@ -208,7 +208,7 @@ int32_t write_to_sockets(int32_t *socket_desc_client, int32_t stdin_fd, fd_set s
     }
 
     if((rd = read(stdin_fd, buffer+sizeof(uint64_t)+sizeof(uint32_t), block_size-(sizeof(uint64_t)+sizeof(uint32_t)))) < 0){
-        fwrite("Read from stdin failed! \n", 1, strlen("Read from stdin failed! \n"), fp_log);
+        fputs("Read from stdin failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -224,7 +224,7 @@ int32_t write_to_sockets(int32_t *socket_desc_client, int32_t stdin_fd, fd_set s
         memcpy(buffer+sizeof(uint64_t), &rd, sizeof(uint32_t));
         rd =  ntohl(rd);
         if((wrt = writen(socket_desc_client[stream_index], buffer, rd+sizeof(uint64_t)+sizeof(uint32_t))) < rd+sizeof(uint64_t)+sizeof(uint32_t)){
-            fwrite("Send failed! \n", 1, strlen("Send failed! \n"), fp_log);
+            fputs("Send failed! \n", fp_log);
             fflush(fp_log);
             return -1;
         }
@@ -275,7 +275,7 @@ int32_t write_to_buffer(int32_t *socket_desc_client, fd_set soc_tempfds, char **
         rec_num_bytes = ntohl(rec_num_bytes);
 
         if (seqnum_temp >= max_out_of_orders){
-            fwrite("Large seq. num! \n", 1, strlen("Large seq. num! \n"), fp_log);
+            fputs("Large seq. num! \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -288,13 +288,13 @@ int32_t write_to_buffer(int32_t *socket_desc_client, fd_set soc_tempfds, char **
             num_of_out_of_orders += 1;
         }
         else{
-            fwrite("Read failed! \n", 1, strlen("Read failed! \n"), fp_log);
+            fputs("Read failed! \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
     }
     else{
-        fwrite("Read header failed! \n", 1, strlen("Read header failed! \n"), fp_log);
+        fputs("Read header failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -342,7 +342,7 @@ void send_the_end(int32_t *socket_desc_client, fd_set soc_tempfds, FILE *fp_log)
             rd = 0;
             memcpy(buffer+8, &rd, 4);
             if((wrt = writen(socket_desc_client[i], buffer, 12)) < 12){
-                fwrite("Send failed! \n", 1, strlen("Send failed! \n"), fp_log);
+                fputs("Send failed! \n", fp_log);
                 fflush(fp_log);
                 exit(0);
             }
@@ -400,7 +400,7 @@ int32_t main(int32_t argc, char **argv){
 
     for(i = 0; i<num_of_streams; i++){
         if ((socket_desc_client[i] = accept(socket_desc, NULL, NULL)) <0){
-            fwrite("Accept failed! \n", 1, strlen("Accept failed! \n"), fp_log);
+            fputs("Accept failed! \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -431,7 +431,7 @@ int32_t main(int32_t argc, char **argv){
         server.sin_port = htons(remote_port);
 
         if((server_socket = socket(AF_INET , SOCK_STREAM , 0)) < 0){
-            fwrite("Could not create socket \n", 1, strlen("Could not create socket \n"), fp_log);
+            fputs("Could not create socket \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -497,7 +497,7 @@ int32_t main(int32_t argc, char **argv){
 
     }//while
 
-    fwrite("\n The End! \n", 1, strlen("\n The End! \n"), fp_log);
+    fputs("\n The End! \n", fp_log);
     fflush(fp_log);
 
     sleep (3);

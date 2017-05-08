@@ -82,7 +82,7 @@ void send_args(int32_t argc, char** argv, int32_t socket_desc, FILE *fp_log){
     num_of_args = htonl(num_of_args);
     memcpy(buffer, &num_of_args, sizeof(uint32_t));
     if((wrt = write(socket_desc, buffer, sizeof(uint32_t))) < sizeof(uint32_t)){
-        fwrite("Send failed \n", 1, strlen("Send failed \n"), fp_log);
+        fputs("Send failed \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -94,13 +94,13 @@ void send_args(int32_t argc, char** argv, int32_t socket_desc, FILE *fp_log){
         temp = htonl(temp);
         memcpy(buffer, &temp, sizeof(uint32_t));
         if((wrt = writen(socket_desc, buffer, sizeof(uint32_t))) < sizeof(uint32_t)){
-            fwrite("Send failed \n", 1, strlen("Send failed \n"), fp_log);
+            fputs("Send failed \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
 
         if((wrt = writen(socket_desc, argv[i], strlen(argv[i]))) < strlen(argv[i])){
-            fwrite("Send failed \n", 1, strlen("Send failed \n"), fp_log);
+            fputs("Send failed \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -265,25 +265,25 @@ int32_t create_TCP_server(FILE *fp_log, uint32_t port){
     int32_t socket_desc;
 
     if((socket_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-        fwrite("socket create failed! \n", 1, strlen("socket create failed! \n"), fp_log);
+        fputs("socket create failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
 
     int32_t yes = 1;
     if ( setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1 ){
-        fwrite("setsockopt \n", 1, strlen("setsockopt \n"), fp_log);
+        fputs("setsockopt \n", fp_log);
         fflush(fp_log);
     }
 
     if (bind(socket_desc, (struct sockaddr*)(&server), sizeof(server)) < 0){
-        fwrite("Bind failed! \n", 1, strlen("Bind failed! \n"), fp_log);
+        fputs("Bind failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
 
     if (listen(socket_desc, 5) == -1){
-        fwrite("Listen failed! \n", 1, strlen("Listen failed! \n"), fp_log);
+        fputs("Listen failed! \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -306,7 +306,7 @@ int32_t *build_TCP_connections(char *IP, FILE *fp_log){
 
     for(i = 0; i<num_of_streams; i++){
         if((socket_desc[i] = socket(AF_INET , SOCK_STREAM , 0)) < 0){
-            fwrite("Could not create socket \n", 1, strlen("Could not create socket \n"), fp_log);
+            fputs("Could not create socket \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -346,7 +346,7 @@ void write_to_SSH_stream(int32_t *transceiver_write_fds, fd_set write_tempfds, i
     unsigned char buffer[block_size];
 
     if((rd = read(read_fd, buffer+sizeof(uint64_t)+sizeof(uint32_t), block_size-(sizeof(uint64_t)+sizeof(uint32_t)))) < 0){
-        fwrite("Receive from child fail \n", 1, strlen("Receive from child fail \n"), fp_log);
+        fputs("Receive from child fail \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -367,7 +367,7 @@ void write_to_SSH_stream(int32_t *transceiver_write_fds, fd_set write_tempfds, i
         }
         rd =  ntohl(rd);
         if((wrt = writen(transceiver_write_fds[stream_index], buffer, rd+sizeof(uint64_t)+sizeof(uint32_t))) < rd+sizeof(uint64_t)+sizeof(uint32_t)){
-            fwrite("Send fail \n", 1, strlen("Send fail \n"), fp_log);
+            fputs("Send fail \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -392,7 +392,7 @@ void write_to_TCP_stream(int32_t *socket_desc, fd_set write_tempfds, int32_t rea
     }
 
     if((rd = read(read_fd, buffer+sizeof(uint64_t)+sizeof(uint32_t), block_size-(sizeof(uint64_t)+sizeof(uint32_t)))) < 0){
-        fwrite("Receive from child fail \n", 1, strlen("Receive from child fail \n"), fp_log);
+        fputs("Receive from child fail \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -407,7 +407,7 @@ void write_to_TCP_stream(int32_t *socket_desc, fd_set write_tempfds, int32_t rea
         memcpy(buffer+sizeof(uint64_t), &rd, sizeof(uint32_t));
         rd =  ntohl(rd);
         if((wrt = writen(socket_desc[stream_index], buffer, rd+sizeof(uint64_t)+sizeof(uint32_t))) < rd+sizeof(uint64_t)+sizeof(uint32_t)){
-            fwrite("Send fail \n", 1, strlen("Send fail \n"), fp_log);
+            fputs("Send fail \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -463,13 +463,13 @@ int32_t write_to_buffer(int32_t *read_desc, fd_set read_tempfds, FILE *fp_log, c
             num_of_out_of_orders += 1;
         }
         else{
-            fwrite("read fail* \n", 1, strlen("read fail* \n"), fp_log);
+            fputs("read fail* \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
     }
     else{
-        fwrite("read header fail \n", 1, strlen("read header fail \n"), fp_log);
+        fputs("read header fail \n", fp_log);
         fflush(fp_log);
         exit(0);
     }
@@ -590,7 +590,7 @@ int32_t main(int32_t argc, char *argv[]){
     if (port_forwarding == 1){
         server_socket = create_TCP_server(fp_log, local_port);
         if ((client_socket = accept(server_socket, NULL, NULL)) <0){
-            fwrite("Accept failed! \n", 1, strlen("Accept failed! \n"), fp_log);
+            fputs("Accept failed! \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
@@ -601,7 +601,7 @@ int32_t main(int32_t argc, char *argv[]){
         server.sin_port = htons(local_port);
 
         if((client_socket = socket(AF_INET , SOCK_STREAM , 0)) < 0){
-            fwrite("Could not create socket \n", 1, strlen("Could not create socket \n"), fp_log);
+            fputs("Could not create socket \n", fp_log);
             fflush(fp_log);
             exit(0);
         }
