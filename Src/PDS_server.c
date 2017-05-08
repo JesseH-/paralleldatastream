@@ -13,7 +13,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *      
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -55,13 +55,13 @@ char **receive_command_args(FILE *fp_log){
         }
         arg_size = ntohl(arg_size);
         arg = (char*)malloc((arg_size+1) * sizeof(char));
-        
+
         if((rd = readn(STDIN_FILENO, arg, arg_size)) < arg_size){
             fwrite("less than size \n", 1, strlen("less than size \n"), fp_log);
             fflush(fp_log);
             exit(0);
         }
-        
+
         arg[arg_size] = '\0';
         command_args[i] = arg;
     }
@@ -213,8 +213,8 @@ int32_t write_to_sockets(int32_t *socket_desc_client, int32_t stdin_fd, fd_set s
         exit(0);
     }
 
-    if (rd > 0){ 
-        temp_seq = seqnum_send / 4294967296; // = 2^32 
+    if (rd > 0){
+        temp_seq = seqnum_send / 4294967296; // = 2^32
         temp_seq = htonl(temp_seq);
         memcpy(buffer, &temp_seq, sizeof(uint32_t));
         temp_seq = seqnum_send % 4294967296;
@@ -240,9 +240,9 @@ int32_t write_to_sockets(int32_t *socket_desc_client, int32_t stdin_fd, fd_set s
     return 1;
 }
 
-int32_t write_to_buffer(int32_t *socket_desc_client, fd_set soc_tempfds, char **buffer_rec, 
-                     uint32_t *byte_nums, uint32_t *offset, FILE *fp_log){ 
- 
+int32_t write_to_buffer(int32_t *socket_desc_client, fd_set soc_tempfds, char **buffer_rec,
+                     uint32_t *byte_nums, uint32_t *offset, FILE *fp_log){
+
     uint32_t rec_num_bytes, i, rec_buff = 0;
     int32_t rd, max_rec = 0;
     uint32_t temp_seq;
@@ -268,12 +268,12 @@ int32_t write_to_buffer(int32_t *socket_desc_client, fd_set soc_tempfds, char **
         memcpy(&temp_seq, buffer, sizeof(uint32_t));
         temp_seq = ntohl(temp_seq);
         seqnum_temp = temp_seq * 4294967296;
-        memcpy(&temp_seq, buffer+sizeof(uint32_t), sizeof(uint32_t)); 
+        memcpy(&temp_seq, buffer+sizeof(uint32_t), sizeof(uint32_t));
         temp_seq = ntohl(temp_seq);
         seqnum_temp += temp_seq;
         memcpy(&rec_num_bytes, buffer+sizeof(uint64_t), sizeof(uint32_t));
         rec_num_bytes = ntohl(rec_num_bytes);
- 
+
         if (seqnum_temp >= max_out_of_orders){
             fwrite("Large seq. num! \n", 1, strlen("Large seq. num! \n"), fp_log);
             fflush(fp_log);
@@ -330,7 +330,7 @@ void write_to_stdout(int32_t stdout_fd, char **buffer_rec, uint32_t *byte_nums, 
 }
 
 void send_the_end(int32_t *socket_desc_client, fd_set soc_tempfds, FILE *fp_log){
-    
+
     int32_t rd, wrt, i =0;
     unsigned char buffer[12];
     socklen_t optlen = sizeof(uint32_t);
@@ -376,16 +376,16 @@ int32_t main(int32_t argc, char **argv){
 
     char **buffer_rec = malloc(max_out_of_orders * sizeof(char *));
     uint32_t *byte_nums = malloc(max_out_of_orders * sizeof(uint32_t));
-    uint32_t *offset = malloc(max_out_of_orders * sizeof(uint32_t)); 
+    uint32_t *offset = malloc(max_out_of_orders * sizeof(uint32_t));
 
     int32_t std_in_out_fds[2];
 
-    fd_set soc_tempfds, std_tempfd, stdin_activefd, stdout_activefd; 
+    fd_set soc_tempfds, std_tempfd, stdin_activefd, stdout_activefd;
     fd_set soc_activefds;
     int32_t soc_maxfd = 0;
     FD_ZERO(&soc_activefds);
     FD_ZERO(&stdin_activefd);
-    FD_ZERO(&stdout_activefd);  
+    FD_ZERO(&stdout_activefd);
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 0;
@@ -396,7 +396,7 @@ int32_t main(int32_t argc, char **argv){
     else if (strcmp(argv[3], "SSH") == 0)
         socket_desc = create_SSH_server(fp_log);
 
-    // accept connections 
+    // accept connections
 
     for(i = 0; i<num_of_streams; i++){
         if ((socket_desc_client[i] = accept(socket_desc, NULL, NULL)) <0){
@@ -444,7 +444,7 @@ int32_t main(int32_t argc, char **argv){
         FD_SET(server_socket, &stdout_activefd);
     }
 
-    while (1) {      
+    while (1) {
 
         // read from stdin and write to sockets!
         soc_tempfds = soc_activefds;
@@ -478,18 +478,18 @@ int32_t main(int32_t argc, char **argv){
             }
             else
                 write_out = write_to_sockets(socket_desc_client, server_socket, soc_tempfds, fp_log);
-        }    
+        }
 
         // read from sockets and write to stdout!
         soc_tempfds = soc_activefds;
         select_out_socket_2 = select(soc_maxfd+1, &soc_tempfds, NULL, NULL, &tv);
- 
+
         // there is some data ready on sockets
         if (select_out_socket_2 > 0){
             if (write_to_buffer(socket_desc_client, soc_tempfds, buffer_rec, byte_nums, offset, fp_log) == 0)
-               ;  
+               ;
         }
-        
+
         if (port_forwarding == 0)
             write_to_stdout(std_in_out_fds[1], buffer_rec, byte_nums, offset, fp_log);
         else
@@ -499,17 +499,17 @@ int32_t main(int32_t argc, char **argv){
 
     fwrite("\n The End! \n", 1, strlen("\n The End! \n"), fp_log);
     fflush(fp_log);
- 
+
     sleep (3);
 
 
     if (port_forwarding == 0){
-        // Clear stdout/stdin nonblocking 
+        // Clear stdout/stdin nonblocking
         clr_fl(std_in_out_fds[1], O_NONBLOCK);
         clr_fl(std_in_out_fds[0], O_NONBLOCK);
-        close(std_in_out_fds[0]); 
+        close(std_in_out_fds[0]);
         close(std_in_out_fds[1]);
-    } 
+    }
     else{
         clr_fl(server_socket, O_NONBLOCK);
         close(server_socket);
@@ -519,12 +519,12 @@ int32_t main(int32_t argc, char **argv){
     free(byte_nums);
     free(offset);
 
-    /* close sockets */ 
+    /* close sockets */
     for(i = 0; i<num_of_streams; i++){
         if (i == 0)
             close(socket_desc);
         close(socket_desc_client[i]);
-    } 
-  
+    }
+
     return 0;
 }
