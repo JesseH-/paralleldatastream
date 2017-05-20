@@ -68,7 +68,7 @@ int hostname_to_ip(char* hostname , char* ip){
     return 1;
 }
 
-void send_args(int32_t argc, char** argv, int32_t socket_desc, FILE *fp_log){
+void send_args(int32_t argc, char** argv, int32_t socket_desc){
 
     unsigned char buffer[100];
     uint32_t i, temp, num_of_args;
@@ -83,7 +83,7 @@ void send_args(int32_t argc, char** argv, int32_t socket_desc, FILE *fp_log){
     num_of_args = htonl(num_of_args);
     memcpy(buffer, &num_of_args, sizeof(uint32_t));
     if((wrt = write(socket_desc, buffer, sizeof(uint32_t))) < sizeof(uint32_t)){
-        log_msg("Send failed \n", fp_log);
+        log_msg("Send failed \n");
         exit(0);
     }
 
@@ -94,18 +94,18 @@ void send_args(int32_t argc, char** argv, int32_t socket_desc, FILE *fp_log){
         temp = htonl(temp);
         memcpy(buffer, &temp, sizeof(uint32_t));
         if((wrt = writen(socket_desc, buffer, sizeof(uint32_t))) < sizeof(uint32_t)){
-            log_msg("Send failed \n", fp_log);
+            log_msg("Send failed \n");
             exit(0);
         }
 
         if((wrt = writen(socket_desc, argv[i], strlen(argv[i]))) < strlen(argv[i])){
-            log_msg("Send failed \n", fp_log);
+            log_msg("Send failed \n");
             exit(0);
         }
     }
 }
 
-char * run_PDS_server(int32_t *read_fd, int32_t *write_fd, int32_t argc, char **argv, FILE *fp_log){
+char * run_PDS_server(int32_t *read_fd, int32_t *write_fd, int32_t argc, char **argv){
 
     int32_t num_args;
     char *IP = (char *)malloc(100 * sizeof(char));
@@ -183,7 +183,7 @@ char * run_PDS_server(int32_t *read_fd, int32_t *write_fd, int32_t argc, char **
     return IP;
 }
 
-void run_transceiver(int32_t *read_fd, int32_t *write_fd, char **argv, char *ID, FILE *fp_log){
+void run_transceiver(int32_t *read_fd, int32_t *write_fd, char **argv, char *ID){
 
     int32_t num_args = 5;
     char **command_args = (char**)malloc((num_args+1) * sizeof(char *));
@@ -252,7 +252,7 @@ void run_transceiver(int32_t *read_fd, int32_t *write_fd, char **argv, char *ID,
 
 }
 
-int32_t create_TCP_server(FILE *fp_log, uint32_t port){
+int32_t create_TCP_server(uint32_t port){
 
     socklen_t optlen = sizeof(uint32_t);
     struct sockaddr_in server;
@@ -263,29 +263,29 @@ int32_t create_TCP_server(FILE *fp_log, uint32_t port){
     int32_t socket_desc;
 
     if((socket_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-        log_msg("socket create failed! \n", fp_log);
+        log_msg("socket create failed! \n");
         exit(0);
     }
 
     int32_t yes = 1;
     if ( setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1 ){
-        log_msg("setsockopt \n", fp_log);
+        log_msg("setsockopt \n");
     }
 
     if (bind(socket_desc, (struct sockaddr*)(&server), sizeof(server)) < 0){
-        log_msg("Bind failed! \n", fp_log);
+        log_msg("Bind failed! \n");
         exit(0);
     }
 
     if (listen(socket_desc, 5) == -1){
-        log_msg("Listen failed! \n", fp_log);
+        log_msg("Listen failed! \n");
         exit(0);
     }
 
     return socket_desc;
 }
 
-int32_t *build_TCP_connections(char *IP, FILE *fp_log){
+int32_t *build_TCP_connections(char *IP){
 
     socklen_t optlen = sizeof(uint32_t);
     uint32_t port = 1234;
@@ -300,7 +300,7 @@ int32_t *build_TCP_connections(char *IP, FILE *fp_log){
 
     for(i = 0; i<num_of_streams; i++){
         if((socket_desc[i] = socket(AF_INET , SOCK_STREAM , 0)) < 0){
-            log_msg("Could not create socket \n", fp_log);
+            log_msg("Could not create socket \n");
             exit(0);
         }
 
@@ -311,7 +311,7 @@ int32_t *build_TCP_connections(char *IP, FILE *fp_log){
     return socket_desc;
 }
 
-int32_t **build_SSH_connections(char **argv, FILE *fp_log){
+int32_t **build_SSH_connections(char **argv){
 
     int32_t i;
     int32_t transceiver_read_fd[num_of_streams][2];
@@ -324,7 +324,7 @@ int32_t **build_SSH_connections(char **argv, FILE *fp_log){
     for(i = 0; i<num_of_streams; i++){
         char ID[10];
         sprintf(ID, "%d", i);
-        run_transceiver(transceiver_read_fd[i], transceiver_write_fd[i], argv, ID, fp_log);
+        run_transceiver(transceiver_read_fd[i], transceiver_write_fd[i], argv, ID);
         transceiver_fds[0][i] = transceiver_read_fd[i][0];
         transceiver_fds[1][i] = transceiver_write_fd[i][1];
     }
@@ -332,14 +332,14 @@ int32_t **build_SSH_connections(char **argv, FILE *fp_log){
     return transceiver_fds;
 }
 
-void write_to_SSH_stream(int32_t *transceiver_write_fds, fd_set write_tempfds, int32_t read_fd, FILE *fp_log){
+void write_to_SSH_stream(int32_t *transceiver_write_fds, fd_set write_tempfds, int32_t read_fd){
 
     uint32_t temp_seq, maxDiff = 0;
     int32_t stream_index, wrt, rd;
     unsigned char buffer[block_size];
 
     if((rd = read(read_fd, buffer+sizeof(uint64_t)+sizeof(uint32_t), block_size-(sizeof(uint64_t)+sizeof(uint32_t)))) < 0){
-        log_msg("Receive from child fail \n", fp_log);
+        log_msg("Receive from child fail \n");
         exit(0);
     }
     else if (rd > 0){
@@ -359,7 +359,7 @@ void write_to_SSH_stream(int32_t *transceiver_write_fds, fd_set write_tempfds, i
         }
         rd =  ntohl(rd);
         if((wrt = writen(transceiver_write_fds[stream_index], buffer, rd+sizeof(uint64_t)+sizeof(uint32_t))) < rd+sizeof(uint64_t)+sizeof(uint32_t)){
-            log_msg("Send fail \n", fp_log);
+            log_msg("Send fail \n");
             exit(0);
         }
         else{
@@ -368,7 +368,7 @@ void write_to_SSH_stream(int32_t *transceiver_write_fds, fd_set write_tempfds, i
     }
 }
 
-void write_to_TCP_stream(int32_t *socket_desc, fd_set write_tempfds, int32_t read_fd, FILE *fp_log){
+void write_to_TCP_stream(int32_t *socket_desc, fd_set write_tempfds, int32_t read_fd){
 
     socklen_t optlen = sizeof(uint32_t);
     uint32_t temp_seq, i, maxDiff = 0;
@@ -383,7 +383,7 @@ void write_to_TCP_stream(int32_t *socket_desc, fd_set write_tempfds, int32_t rea
     }
 
     if((rd = read(read_fd, buffer+sizeof(uint64_t)+sizeof(uint32_t), block_size-(sizeof(uint64_t)+sizeof(uint32_t)))) < 0){
-        log_msg("Receive from child fail \n", fp_log);
+        log_msg("Receive from child fail \n");
         exit(0);
     }
     else if (rd > 0){
@@ -397,7 +397,7 @@ void write_to_TCP_stream(int32_t *socket_desc, fd_set write_tempfds, int32_t rea
         memcpy(buffer+sizeof(uint64_t), &rd, sizeof(uint32_t));
         rd =  ntohl(rd);
         if((wrt = writen(socket_desc[stream_index], buffer, rd+sizeof(uint64_t)+sizeof(uint32_t))) < rd+sizeof(uint64_t)+sizeof(uint32_t)){
-            log_msg("Send fail \n", fp_log);
+            log_msg("Send fail \n");
             exit(0);
         }
         else{
@@ -406,7 +406,7 @@ void write_to_TCP_stream(int32_t *socket_desc, fd_set write_tempfds, int32_t rea
     }
 }
 
-int32_t write_to_buffer(int32_t *read_desc, fd_set read_tempfds, FILE *fp_log, char **buffer_rec,
+int32_t write_to_buffer(int32_t *read_desc, fd_set read_tempfds, char **buffer_rec,
                     uint32_t *byte_nums, uint32_t *offset){
 
     unsigned char buffer[block_size];
@@ -437,7 +437,7 @@ int32_t write_to_buffer(int32_t *read_desc, fd_set read_tempfds, FILE *fp_log, c
         temp_seq = ntohl(temp_seq);
         seqnum_temp += temp_seq;
         if (seqnum_temp == 0){
-            log_msg("The End! \n", fp_log);
+            log_msg("The End! \n");
             return 0;
         }
         memcpy(&rec_num_bytes, buffer+sizeof(uint64_t), sizeof(uint32_t));
@@ -451,19 +451,19 @@ int32_t write_to_buffer(int32_t *read_desc, fd_set read_tempfds, FILE *fp_log, c
             num_of_out_of_orders += 1;
         }
         else{
-            log_msg("read fail* \n", fp_log);
+            log_msg("read fail* \n");
             exit(0);
         }
     }
     else{
-        log_msg("read header fail \n", fp_log);
+        log_msg("read header fail \n");
         exit(0);
     }
 
     return 1;
 }
 
-void write_to_output(FILE *fp_log, char **buffer_rec, uint32_t *byte_nums, uint32_t *offset, int32_t write_fd){
+void write_to_output(char **buffer_rec, uint32_t *byte_nums, uint32_t *offset, int32_t write_fd){
 
     int32_t wrt;
     while(num_of_out_of_orders > 0){
@@ -571,12 +571,12 @@ int32_t main(int32_t argc, char *argv[]){
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    FILE *fp_log = fopen("~/log_PDS_client.txt", "w");
+    log_start("~/log_PDS_client.txt");
 
     if (port_forwarding == 1){
-        server_socket = create_TCP_server(fp_log, local_port);
+        server_socket = create_TCP_server(local_port);
         if ((client_socket = accept(server_socket, NULL, NULL)) <0){
-            log_msg("Accept failed! \n", fp_log);
+            log_msg("Accept failed! \n");
             exit(0);
         }
         /*socklen_t optlen = sizeof(uint32_t);
@@ -586,7 +586,7 @@ int32_t main(int32_t argc, char *argv[]){
         server.sin_port = htons(local_port);
 
         if((client_socket = socket(AF_INET , SOCK_STREAM , 0)) < 0){
-            log_msg("Could not create socket \n", fp_log);
+            log_msg("Could not create socket \n");
             exit(0);
         }
 
@@ -599,15 +599,15 @@ int32_t main(int32_t argc, char *argv[]){
     int32_t read_fd[2];
     int32_t write_fd[2];
 
-    char *IP = run_PDS_server(read_fd, write_fd, argc, argv, fp_log);
+    char *IP = run_PDS_server(read_fd, write_fd, argc, argv);
 
     /* Sending setup parameters */
 
     if (port_forwarding == 0)
-        send_args(argc, argv, write_fd[1], fp_log);
+        send_args(argc, argv, write_fd[1]);
 
     if (strcmp(argv[3], "TCP") == 0){
-        socket_desc = build_TCP_connections(IP, fp_log);
+        socket_desc = build_TCP_connections(IP);
         if (port_forwarding == 1)
             initialize_fd_sets(activefds, socket_desc, NULL, client_socket, client_socket, maxfds);
         else
@@ -615,7 +615,7 @@ int32_t main(int32_t argc, char *argv[]){
     }
 
     else if (strcmp(argv[3], "SSH") == 0){
-        transceiver_fds = build_SSH_connections(argv, fp_log);
+        transceiver_fds = build_SSH_connections(argv);
         if (port_forwarding == 1)
             initialize_fd_sets(activefds, NULL, transceiver_fds, client_socket, client_socket, maxfds);
         else
@@ -633,9 +633,9 @@ int32_t main(int32_t argc, char *argv[]){
             select_out = select(maxfds[2]+1, NULL, &write_tempfds, NULL, &tv);
             if (select_out > 0){
                 if (port_forwarding == 1)
-                    write_to_SSH_stream(transceiver_fds[1], write_tempfds, client_socket, fp_log);
+                    write_to_SSH_stream(transceiver_fds[1], write_tempfds, client_socket);
                 else
-                    write_to_SSH_stream(transceiver_fds[1], write_tempfds, STDIN_FILENO, fp_log);
+                    write_to_SSH_stream(transceiver_fds[1], write_tempfds, STDIN_FILENO);
             }
         }
 
@@ -644,9 +644,9 @@ int32_t main(int32_t argc, char *argv[]){
             select_out = select(maxfds[0]+1, NULL, &write_tempfds, NULL, &tv);
             if (select_out > 0){
                 if (port_forwarding == 1)
-                    write_to_TCP_stream(socket_desc, write_tempfds, client_socket, fp_log);
+                    write_to_TCP_stream(socket_desc, write_tempfds, client_socket);
                 else
-                    write_to_TCP_stream(socket_desc, write_tempfds, STDIN_FILENO, fp_log);
+                    write_to_TCP_stream(socket_desc, write_tempfds, STDIN_FILENO);
             }
         }
 
@@ -666,13 +666,13 @@ int32_t main(int32_t argc, char *argv[]){
 
         // there is some data ready on sockets and there is free space on stdout
         if (select_out > 0)
-            if (write_to_buffer(read_desc, read_tempfds, fp_log, buffer_rec, byte_nums, offset) == 0)
+            if (write_to_buffer(read_desc, read_tempfds, buffer_rec, byte_nums, offset) == 0)
                 break;
 
         if (port_forwarding == 1)
-            write_to_output(fp_log, buffer_rec, byte_nums, offset, client_socket);
+            write_to_output(buffer_rec, byte_nums, offset, client_socket);
         else
-            write_to_output(fp_log, buffer_rec, byte_nums, offset, STDOUT_FILENO);
+            write_to_output(buffer_rec, byte_nums, offset, STDOUT_FILENO);
 
     }//while
 
@@ -684,6 +684,8 @@ int32_t main(int32_t argc, char *argv[]){
         close_fds (socket_desc, NULL);
     else if(strcmp(argv[3], "SSH") == 0)
         close_fds (NULL, transceiver_fds);
+
+    log_end();
 
     return 0;
 }

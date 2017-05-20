@@ -20,4 +20,6 @@
  */
 #include <stdio.h>
 
-extern void log_msg(const char *msg, FILE *file);
+extern void log_start(const char *path);
+extern void log_end();
+extern void log_msg(const char *msg);

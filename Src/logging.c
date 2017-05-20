@@ -20,7 +20,19 @@
  */
 #include "logging.h"
 
-void log_msg(const char *msg, FILE *file)
+static FILE *file;
+
+void log_start(const char *path)
+{
+    file = fopen(path, "w");
+}
+
+void log_end()
+{
+    fclose(file);
+}
+
+void log_msg(const char *msg)
 {
     fputs(msg, file);
     fflush(file);

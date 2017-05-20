@@ -36,7 +36,7 @@ int32_t main(int32_t argc, char **argv)
         uint32_t block_size = atoi(argv[1]);
         uint32_t ID = atoi(argv[2]);
         unsigned char buffer[block_size];
-        FILE *fp_log = fopen("./log_PDS_transceiver.txt", "w");
+        log_start("./log_PDS_transceiver.txt");
 
         FD_ZERO(&soc_activefd);
         FD_ZERO(&stdin_activefd);
@@ -52,7 +52,7 @@ int32_t main(int32_t argc, char **argv)
         strncpy(server.sun_path, SRV_SOCK_PATH, sizeof(server.sun_path) - 1);
 
         if ((socket_desc = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-                log_msg("Could not create socket \n", fp_log);
+                log_msg("Could not create socket \n");
                 exit(0);
         }
         FD_SET(socket_desc, &soc_activefd);
@@ -81,13 +81,13 @@ int32_t main(int32_t argc, char **argv)
                 if (select_out_soc > 0 && select_out_std > 0) {
 
                         if ((rd1 = read(STDIN_FILENO, buffer, block_size)) < 0) {
-                                log_msg("Receive from stdin \n", fp_log);
+                                log_msg("Receive from stdin \n");
                                 exit(0);
                         } else if (rd1 > 0) {
 
                                 if ((wrt =
                                      writen(socket_desc, buffer, rd1)) < rd1) {
-                                        log_msg("Send fail \n", fp_log);
+                                        log_msg("Send fail \n");
                                         exit(0);
                                 }
                         }
@@ -103,14 +103,14 @@ int32_t main(int32_t argc, char **argv)
                 if (select_out_soc > 0 && select_out_std > 0) {
 
                         if ((rd2 = read(socket_desc, buffer, block_size)) < 0) {
-                                log_msg("Read failed \n", fp_log);
+                                log_msg("Read failed \n");
                                 exit(0);
                         } else if (rd2 > 0) {
                                 //sleep(1);
                                 if ((wrt =
                                      writen(STDOUT_FILENO, buffer,
                                             rd2)) < rd2) {
-                                        log_msg("Write failed \n", fp_log);
+                                        log_msg("Write failed \n");
                                         exit(0);
                                 }
                         }
