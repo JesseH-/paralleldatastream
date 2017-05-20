@@ -18,6 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include "logging.h"
 #include "unpheaders.h"
 #define SRV_SOCK_PATH   "/tmp/ux_socket"
 
@@ -51,8 +52,7 @@ int32_t main(int32_t argc, char **argv)
         strncpy(server.sun_path, SRV_SOCK_PATH, sizeof(server.sun_path) - 1);
 
         if ((socket_desc = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-                fputs("Could not create socket \n", fp_log);
-                fflush(fp_log);
+                log_msg("Could not create socket \n", fp_log);
                 exit(0);
         }
         FD_SET(socket_desc, &soc_activefd);
@@ -81,15 +81,13 @@ int32_t main(int32_t argc, char **argv)
                 if (select_out_soc > 0 && select_out_std > 0) {
 
                         if ((rd1 = read(STDIN_FILENO, buffer, block_size)) < 0) {
-                                fputs("Receive from stdin \n", fp_log);
-                                fflush(fp_log);
+                                log_msg("Receive from stdin \n", fp_log);
                                 exit(0);
                         } else if (rd1 > 0) {
 
                                 if ((wrt =
                                      writen(socket_desc, buffer, rd1)) < rd1) {
-                                        fputs("Send fail \n", fp_log);
-                                        fflush(fp_log);
+                                        log_msg("Send fail \n", fp_log);
                                         exit(0);
                                 }
                         }
@@ -105,16 +103,14 @@ int32_t main(int32_t argc, char **argv)
                 if (select_out_soc > 0 && select_out_std > 0) {
 
                         if ((rd2 = read(socket_desc, buffer, block_size)) < 0) {
-                                fputs("Read failed \n", fp_log);
-                                fflush(fp_log);
+                                log_msg("Read failed \n", fp_log);
                                 exit(0);
                         } else if (rd2 > 0) {
                                 //sleep(1);
                                 if ((wrt =
                                      writen(STDOUT_FILENO, buffer,
                                             rd2)) < rd2) {
-                                        fputs("Write failed \n", fp_log);
-                                        fflush(fp_log);
+                                        log_msg("Write failed \n", fp_log);
                                         exit(0);
                                 }
                         }
