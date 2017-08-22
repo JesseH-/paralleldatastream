@@ -272,10 +272,14 @@ int32_t create_TCP_server(uint32_t port){
         log_msg("setsockopt \n");
     }
 
+    log_msg("Bind to our address.");
+
     if (bind(socket_desc, (struct sockaddr*)(&server), sizeof(server)) < 0){
         log_msg("Bind failed! \n");
         exit(0);
     }
+
+    log_msg("Now listen.");
 
     if (listen(socket_desc, 5) == -1){
         log_msg("Listen failed! \n");
@@ -571,14 +575,16 @@ int32_t main(int32_t argc, char *argv[]){
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    log_start("~/log_PDS_client.txt");
+    log_start("/tmp/log_PDS_client.txt");
 
     if (port_forwarding == 1){
         server_socket = create_TCP_server(local_port);
+        log_msg("Accept on our socket.\n");
         if ((client_socket = accept(server_socket, NULL, NULL)) <0){
             log_msg("Accept failed! \n");
             exit(0);
         }
+        log_msg("Accepted connection!");
         /*socklen_t optlen = sizeof(uint32_t);
         struct sockaddr_in server;
         server.sin_addr.s_addr = inet_addr("127.0.0.1");

@@ -339,7 +339,7 @@ void send_the_end(int32_t *socket_desc_client, fd_set soc_tempfds){
 
 int32_t main(int32_t argc, char **argv){
 
-    log_start("~/log_PDS_server.txt");
+    log_start("/tmp/log_PDS_server.txt");
 
     num_of_streams = atoi(argv[1]);
     block_size = atoi(argv[2]);
